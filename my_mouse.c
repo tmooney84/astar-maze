@@ -92,6 +92,44 @@ bool is_empty_pStack(pStack *s){
 }
 
 /*****************pPair Set Logic *****************/
+typedef struct pPair_set{
+        pPair *list[MAX_LENGTH * MAX_LENGTH];
+        int highest_used;
+    }pPair_set;
+
+
+//open_list.insert(open_list, make_p_pair(0, i, j));
+//insert into the pPair set
+//based off f value and then y and x coordinates
+
+void insert_pPair_set(pPair_set *set, pPair* p, bool fresh_step){
+
+//  0)if empty just add to first cell 
+    if(is_empty_pPair_set(set)){
+        set->highest_used++; 
+        set->list[set->highest_used] = p;
+        return;
+    }
+
+    /*
+    1) ***trust cell_details... don't need check
+    just add
+    */
+   if(fresh_step){
+    //means just need to add to set
+   }
+   else
+   {
+    //***need to binary search(if want robust)>>> note
+    //in the README. otherwise linear search and
+    //f, then y, then x in terms of priority
+
+    //need to search out old step in array get the
+    //element to save and then search to find where
+    //
+   }
+}
+
 
 
 //for inputs of ROW and COL from input instead of const
@@ -239,17 +277,30 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst){
    //erase()
 
     //set<pPair *> open_list;
-    static pPair *open_list[MAX_LENGTH * MAX_LENGTH];
     //!!!need to free pPair elements after finished
+    
+    static pPair_set open_list;
 
-
-    open_list.insert(make_p_pair(0, i, j));
+    //If the position does already exist in the open list, but the new path has a 
+    //lower f, then the new node replaces the old one.
+    
+    //open_list.insert(open_list, make_p_pair(0, i, j));
+    insert_pPair_set(&open_list, make_p_pair(0, i, j));
 
     bool found_dst = false;
 
+    //pPair_set empty if begin == end and highest_used == -1
     while(!open_list.empty()){
         pPair pp = *openList.begin();
 
+        //should begin and end be part of the pPair_set struct???
+
+        //with list could have two indexes one for beginning and one for end of list
+        //by default start and end are -1, once the first value is in, they are set to 0
+        //as erased just increment start++ and once the entire structure, % to wrap it around
+        //in a way similar to a ring buffer 
+        //if begin == end and not == -1 and highest_used == -1
+            //then error max capacity reached
         openList.erase(openList.begin());
 
         i = pp.pair.y;
@@ -288,9 +339,19 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst){
         
 //if not on open list then add;; make current sqare parent and record fgh
 //-or- if on open list, check if this better with f
-            if(cell_details[i - 1][j].f == __INT_MAX__
-            || cell_details[i - 1][j].f > f_new){
-                open_list.insert(make_p_pair(f_new,i - 1, j));
+
+//***“Ignore closed” optimization (common for uniform grids)
+            if(cell_details[i - 1][j].f == __INT_MAX__){
+                insert_pPair_set(&open_list, make_p_pair(f_new,i - 1, j), true);
+            
+                cell_details[i - 1][j].f = f_new;
+                cell_details[i - 1][j].g = g_new;
+                cell_details[i - 1][j].h = h_new;
+                cell_details[i - 1][j].parent_i = i;
+                cell_details[i - 1][j].parent_j = j;
+            }
+            else if (cell_details[i - 1][j].f > f_new){
+                insert_pPair_set(&open_list, make_p_pair(f_new,i - 1, j), false);
             
                 cell_details[i - 1][j].f = f_new;
                 cell_details[i - 1][j].g = g_new;
