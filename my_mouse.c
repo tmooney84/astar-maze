@@ -111,14 +111,47 @@ void insert_pPair_set(pPair_set *set, pPair* p, bool fresh_step){
         return;
     }
 
+    //beginning of search 
+    //*****LEFT OFF HERE*********************************************************** */
+    //*****LEFT OFF HERE*********************************************************** */
+    //*****LEFT OFF HERE*********************************************************** */
+    /*
+        should I include start_idx and num_elements in 
+        pPair_set struct/wrapper this way I could
+        calculate the end and make sure things wrap correctly?
+    */ 
+    int end = (start_idx + num_elements)%(sizeof(set->list)/sizeof(set->list[0]));
+
     /*
     1) ***trust cell_details... don't need check
     just add
     */
    if(fresh_step){
     //means just need to add to set
+    //find the f, then y, then x
+    
+    //!!!make??? search_set() or sublogic of prioritization
+    for(int i = start_idx; i < start + set->highest_used + 1; i++) 
+    p->f
+
+    //search for f then coord to get the index where the pPair
+    //will be placed but ***REMEMBER that need to push everything
+    //back one idx first and then add in the new pPair
    }
    else
+   /*
+        for the not first do the same find where the pPair should
+        be placed push everything back until you find the old pPair
+        with the coordinates and then write over that particular pPair
+        without having to recopy everything
+
+        ie: replace 2|4,5 in  4|2,2 4|2,6 5|4,5 6|3,4
+                                0     1     2     3
+
+        use temp buffer to have the current pPair and get to the
+        newF+1 (incase 1000 same fs in row) and start search there or if end comes first
+        then go until y,x found and stop the copying when get to that
+   */
    {
     //***need to binary search(if want robust)>>> note
     //in the README. otherwise linear search and
