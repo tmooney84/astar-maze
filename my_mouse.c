@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 
 #define MAX_LENGTH 1000
@@ -94,7 +95,8 @@ bool is_empty_pStack(pStack *s){
 /*****************pPair Set Logic *****************/
 typedef struct pPair_set{
         pPair *list[MAX_LENGTH * MAX_LENGTH];
-        int highest_used;
+        int start_idx;
+        int num_elements;
     }pPair_set;
 
 
@@ -102,12 +104,30 @@ typedef struct pPair_set{
 //insert into the pPair set
 //based off f value and then y and x coordinates
 
+void insert_pPair_at(pPair_set *set, pPair *p, int idx, int end){
+    pPair *temp = set->list[idx];
+    if(end < (sizeof(set->list)/sizeof(set->list[0])) - 1){
+        while(idx <= end + 1){
+        set->list[idx] = p;
+        p = temp;
+        temp = set->list[++idx];
+               }
+               return;
+    }
+    else
+        perror("insert_pPair_at() unable to"
+            "insert element due to exceeding array size.\n");
+}
+
+
+
 void insert_pPair_set(pPair_set *set, pPair* p, bool fresh_step){
 
 //  0)if empty just add to first cell 
-    if(is_empty_pPair_set(set)){
-        set->highest_used++; 
-        set->list[set->highest_used] = p;
+    if(set->num_elements == 0){
+        set->start_idx = 0;
+        set->list[set->start_idx] = p;
+        set->num_elements++; 
         return;
     }
 
@@ -120,7 +140,7 @@ void insert_pPair_set(pPair_set *set, pPair* p, bool fresh_step){
         pPair_set struct/wrapper this way I could
         calculate the end and make sure things wrap correctly?
     */ 
-    int end = (start_idx + num_elements)%(sizeof(set->list)/sizeof(set->list[0]));
+    int end = (set->start_idx + set->num_elements - 1)%(sizeof(set->list)/sizeof(set->list[0]));
 
     /*
     1) ***trust cell_details... don't need check
@@ -131,14 +151,56 @@ void insert_pPair_set(pPair_set *set, pPair* p, bool fresh_step){
     //find the f, then y, then x
     
     //!!!make??? search_set() or sublogic of prioritization
-    for(int i = start_idx; i < start + set->highest_used + 1; i++) 
-    p->f
+    
+    /*
+    int check_pPair(pPair **list, pPair *p){
+
+    } 
+    
+    */
+    //int place_idx = -1;
+
+    //non-wrapping 
+    if(set->start_idx < end){
+        for(int i = set->start_idx;; i++){
+            //if f value found
+            if(set->list[i]->f == p->f){
+                //fast forward through that f value
+                while(set->list[i++]->f == p->f);
+                //check y and x value
+               //!!! edge case wrap around from last element to 
+               //add to element 0
+                insert_pPair_at(set, p, i, end);
+                return;
+            }
+            //if f value greater than the one in p
+            else if(set->list[i]->f > p->f){
+                insert_pPair_at(set, p, i, end);
+               return;
+            }
+            //last on the list
+            else{
+                insert_pPair_at(set, p, i, end);
+                return;
+            }
+
+            }
+        }
+        //EDGE CASE if > 1M - 1 elements: wrapping 
+        // else if(set->start_idx > end){
+        //     for(int i = set->start_idx;; i++){
+        //     while(i <= sizeof(set->list - 1)){}
+        //     for(i = 0; i < end; i++){}
+        //     }
+        // }        
 
     //search for f then coord to get the index where the pPair
     //will be placed but ***REMEMBER that need to push everything
     //back one idx first and then add in the new pPair
    }
    else
+   //LEFT OFF HERE: IMPLEMENT LEX BY F,X,Y DUP? SKIP otherwise ADD!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    //just use linear search 
    /*
         for the not first do the same find where the pPair should
         be placed push everything back until you find the old pPair
@@ -311,14 +373,19 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst){
 
     //set<pPair *> open_list;
     //!!!need to free pPair elements after finished
-    
-    static pPair_set open_list;
 
+    pPair_set *open_list = malloc(sizeof (pPair_set));
+    if(!open_list){
+        malloc_error();
+    }
+    open_list->start_idx = -1;
+    open_list->num_elements = 0;
+    
     //If the position does already exist in the open list, but the new path has a 
     //lower f, then the new node replaces the old one.
     
     //open_list.insert(open_list, make_p_pair(0, i, j));
-    insert_pPair_set(&open_list, make_p_pair(0, i, j));
+    insert_pPair_set(&open_list, make_p_pair(0, i, j), true);
 
     bool found_dst = false;
 
@@ -500,6 +567,10 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst){
 
         return;
     }
+
+    //!!!make sure all of the pPair elements of list are freed 
+    //b4 open_list freed
+    free(open_list);
 }
 
 
