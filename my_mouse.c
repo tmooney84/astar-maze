@@ -55,6 +55,8 @@ pNode *new_pNode(Pair *pair)
         malloc_error();
     }
     n->pair = pair;
+
+    return n;
 }
 
 // free node
@@ -88,6 +90,7 @@ void push_pStack(pStack *s, Pair *p)
     {
         malloc_error();
     }
+    n->pair = p;
     s->highest_used++;
     s->step[s->highest_used] = n;
     return;
@@ -121,7 +124,7 @@ typedef struct pPair_set
 void insert_pPair_at(pPair_set *set, pPair *p, int start_idx, int end_idx)
 {
     pPair *temp = set->list[start_idx];
-    if (end_idx < (sizeof(set->list) / sizeof(set->list[0])) - 1)
+    if (end_idx < (int)(sizeof(set->list)/sizeof(set->list[0]) - 1))
     {
         while (start_idx <= end_idx + 1)
         {
@@ -159,10 +162,10 @@ void insert_pPair_set(pPair_set *set, pPair *p)
             if (set->list[i]->f == p->f)
             {
                 // fast forward through same f value, y and x (if applicable)
-                while (set->list[i]->f == p->f && set->list[i]->pair.y < p->pair.y)
+                while (set->list[i]->f == p->f && set->list[i]->pair.y > p->pair.y)
                 {
                     i++;
-                    while (set->list[i]->f == p->f && set->list[i]->pair.y > p->pair.y && set->list[i]->pair.x > p->pair.x)
+                    while (set->list[i]->f == p->f && set->list[i]->pair.y == p->pair.y && set->list[i]->pair.x > p->pair.x)
                     {
                         i++;
                     }
@@ -207,16 +210,27 @@ void update_pPair_set(pPair_set *set, int old_f, pPair *p)
         if (set->list[i]->f == p->f)
         {
             // start_update_idx: find where the new pPair should be placed
-            while (set->list[i++]->f == p->f)
-                ;
-            start_update_idx = i;
+                // fast forward through same f value, y and x (if applicable)
+                while (set->list[i]->f == p->f && set->list[i]->pair.y > p->pair.y)
+                {
+                    i++;
+                    while (set->list[i]->f == p->f && set->list[i]->pair.y == p->pair.y && set->list[i]->pair.x > p->pair.x)
+                    {
+                        i++;
+                    }
+                }
+                start_update_idx = i;
 
             // end_update_idx: find the old pPair to mark as end of copying
-            while (i < end && set->list[i]->f != old_f || set->list[i]->pair.y != p->pair.y || set->list[i]->pair.x != p->pair.x)
+            while (i < end && (set->list[i]->f != old_f || set->list[i]->pair.y != p->pair.y || set->list[i]->pair.x != p->pair.x))
             {
                 i++;
             }
             end_update_idx = i;
+            if(end_update_idx == start_update_idx){
+                fprintf(stderr, "update_pPair_set");
+                exit(1);
+            }
 
             //!!! OFF BY ONE ???? SHOULD IT BE THIS!!!???
             // end_update_idx - 1 vs. end_update_idx;
@@ -247,12 +261,14 @@ Pair *make_pair(int row, int col)
     Pair *p = malloc(sizeof(Pair));
     if (!p)
     {
-        prinf("malloc error\n");
+        printf("malloc error\n");
         exit(1);
     }
 
     p->y = row;
     p->x = col;
+
+    return p;
 }
 
 // constructor for pPair *
@@ -261,12 +277,15 @@ pPair *make_p_pair(int f, int row, int col)
     pPair *pp = malloc(sizeof(Pair));
     if (!pp)
     {
-        prinf("malloc error\n");
+        printf("malloc error\n");
         exit(1);
     }
 
+    pp->f = f;
     pp->pair.y = row;
     pp->pair.x = col;
+
+    return pp;
 }
 //!!! adding in ROW and COL because they are not globals
 bool is_valid(int row, int col)
@@ -299,7 +318,7 @@ int calc_hvalue(int row, int col, Pair dst)
 //!!! will need to add functionality for this to print
 // the entire map
 
-int trace_path(Cell cell_details[][COL], Pair dst)
+void trace_path(Cell cell_details[][COL], Pair dst)
 {
     printf("\nThe Path is ");
     int row = dst.y;
@@ -329,6 +348,8 @@ int trace_path(Cell cell_details[][COL], Pair dst)
         printf("-> (%d,%d) ", top_pair->y, top_pair->x);
         free(top_pair);
     }
+
+    printf("\n%d STEPS!", num_steps);
 
     free(steps);
 
@@ -407,7 +428,7 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
     // lower f, then the new node replaces the old one.
 
     // open_list.insert(open_list, make_p_pair(0, i, j));
-    insert_pPair_set(&open_list, make_p_pair(0, i, j));
+    insert_pPair_set(open_list, make_p_pair(0, i, j));
 
     bool found_dst = false;
 
@@ -480,7 +501,7 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
                 //***“Ignore closed” optimization (common for uniform grids)
                 if (cell_details[i - 1][j].f == __INT_MAX__)
                 {
-                    insert_pPair_set(&open_list, make_p_pair(f_new, i - 1, j));
+                    insert_pPair_set(open_list, make_p_pair(f_new, i - 1, j));
 
                     cell_details[i - 1][j].f = f_new;
                     cell_details[i - 1][j].g = g_new;
@@ -490,7 +511,7 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
                 }
                 else if (cell_details[i - 1][j].f > f_new)
                 {
-                    update_pPair_set(&open_list, cell_details[i - 1][j].f, make_p_pair(f_new, i - 1, j));
+                    update_pPair_set(open_list, cell_details[i - 1][j].f, make_p_pair(f_new, i - 1, j));
 
                     cell_details[i - 1][j].f = f_new;
                     cell_details[i - 1][j].g = g_new;
@@ -530,7 +551,7 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
 
                 if (cell_details[i + 1][j].f == __INT_MAX__)
                 {
-                    insert_pPair_set(&open_list, make_p_pair(f_new, i + 1, j));
+                    insert_pPair_set(open_list, make_p_pair(f_new, i + 1, j));
 
                     cell_details[i + 1][j].f = f_new;
                     cell_details[i + 1][j].g = g_new;
@@ -540,7 +561,7 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
                 }
                 else if (cell_details[i + 1][j].f > f_new)
                 {
-                    update_pPair_set(&open_list, cell_details[i + 1][j].f, make_p_pair(f_new, i + 1, j));
+                    update_pPair_set(open_list, cell_details[i + 1][j].f, make_p_pair(f_new, i + 1, j));
 
                     cell_details[i + 1][j].f = f_new;
                     cell_details[i + 1][j].g = g_new;
@@ -580,7 +601,7 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
 
                 if (cell_details[i][j + 1].f == __INT_MAX__)
                 {
-                    insert_pPair_set(&open_list, make_p_pair(f_new, i, j + 1));
+                    insert_pPair_set(open_list, make_p_pair(f_new, i, j + 1));
 
                     cell_details[i][j + 1].f = f_new;
                     cell_details[i][j + 1].g = g_new;
@@ -590,7 +611,7 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
                 }
                 else if (cell_details[i][j + 1].f > f_new)
                 {
-                    update_pPair_set(&open_list, cell_details[i + 1][j].f, make_p_pair(f_new, i, j + 1));
+                    update_pPair_set(open_list, cell_details[i][j + 1].f, make_p_pair(f_new, i, j + 1));
 
                     cell_details[i][j + 1].f = f_new;
                     cell_details[i][j + 1].g = g_new;
@@ -629,7 +650,7 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
                 //-or- if on open list, check if this better with f
                 if (cell_details[i][j - 1].f == __INT_MAX__)
                 {
-                    insert_pPair_set(&open_list, make_p_pair(f_new, i, j - 1));
+                    insert_pPair_set(open_list, make_p_pair(f_new, i, j - 1));
 
                     cell_details[i][j - 1].f = f_new;
                     cell_details[i][j - 1].g = g_new;
@@ -639,7 +660,7 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
                 }
                 else if (cell_details[i][j - 1].f > f_new)
                 {
-                    update_pPair_set(&open_list, cell_details[i + 1][j].f, make_p_pair(f_new, i, j - 1));
+                    update_pPair_set(open_list, cell_details[i][j - 1].f, make_p_pair(f_new, i, j - 1));
 
                     cell_details[i][j - 1].f = f_new;
                     cell_details[i][j - 1].g = g_new;
