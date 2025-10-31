@@ -280,7 +280,7 @@ int calc_hvalue(int row, int col, Pair dst)
     return abs(row - dst.y) + abs(col - dst.x);
 }
 
-void trace_path(Cell cell_details[][COL], int **grid, Pair dst)
+void trace_path(FILE *fp, Cell cell_details[][COL], int **grid, Pair dst)
 {
     int row = dst.y;
     int col = dst.x;
@@ -317,34 +317,36 @@ void trace_path(Cell cell_details[][COL], int **grid, Pair dst)
         free(top_pair);
     }
 
-   //format to original map 
+    fseek(fp, 0, SEEK_SET);
+   
+    //format to original map 
     for(int i = 0; i < ROW; i++){
         for(int j = 0; j < COL; j++){
             if(grid[i][j] == 9)
-                printf("1");
+                fprintf(fp, "1");
             else if(grid[i][j] == 2)
-               printf("2"); 
+               fprintf(fp, "2"); 
             else if(grid[i][j] == 0)
-                printf("*");
+                fprintf(fp, "*");
             else if(grid[i][j] == 7)
-                printf("o");
+                fprintf(fp, "o");
             else
-                printf(" ");
+                fprintf(fp, " ");
         }
         if(i < ROW - 1){
-            printf("\n");
+            fprintf(fp, "\n");
         }
     }
 
     //-2 to account for the start and end
-    printf("\n%d STEPS!\n", num_steps - 2);
+    fprintf(fp, "\n%d STEPS!\n", num_steps - 2);
 
     free(steps);
     return;
 }
 
 //!!! may need src and dst to be pointers???
-void a_star_search(int **grid, Pair *src, Pair *dst)
+void a_star_search(FILE *fp, int **grid, Pair *src, Pair *dst)
 {
     if (is_valid(src->y, src->x) == false)
     {
@@ -443,7 +445,7 @@ void a_star_search(int **grid, Pair *src, Pair *dst)
                 cell_details[i - 1][j].parent_i = i;
                 cell_details[i - 1][j].parent_j = j;
                 //printf("The destination cell is found\n");
-                trace_path(cell_details, grid, *dst);
+                trace_path(fp, cell_details, grid, *dst);
                 found_dst = true;
                 // free pPair after necessary data extracted and open_list
                 free(pp);
@@ -491,7 +493,7 @@ void a_star_search(int **grid, Pair *src, Pair *dst)
                 cell_details[i + 1][j].parent_i = i;
                 cell_details[i + 1][j].parent_j = j;
                 //printf("The destination cell is found\n");
-                trace_path(cell_details, grid, *dst);
+                trace_path(fp, cell_details, grid, *dst);
                 found_dst = true;
                 free(pp);
                 pp = NULL;
@@ -537,7 +539,7 @@ void a_star_search(int **grid, Pair *src, Pair *dst)
                 cell_details[i][j + 1].parent_i = i;
                 cell_details[i][j + 1].parent_j = j;
                 //printf("The destination cell is found\n");
-                trace_path(cell_details, grid, *dst);
+                trace_path(fp, cell_details, grid, *dst);
                 found_dst = true;
                 // free pPair after necessary data extracted and open_list
                 free(pp);
@@ -586,7 +588,7 @@ void a_star_search(int **grid, Pair *src, Pair *dst)
                 cell_details[i][j - 1].parent_i = i;
                 cell_details[i][j - 1].parent_j = j;
                 //printf("The destination cell is found\n");
-                trace_path(cell_details, grid, *dst);
+                trace_path(fp, cell_details, grid, *dst);
                 found_dst = true;
                 free(pp);
                 pp = NULL;
@@ -665,7 +667,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    FILE *fp = fopen(argv[1], "r");
+    FILE *fp = fopen(argv[1], "r+");
     if(!fp){
         perror("Error opening file");
         return 1;
@@ -713,6 +715,8 @@ int main(int argc, char **argv)
         }
         row++;
     }
+    
+    a_star_search(fp, grid, src, dst);
 
     fclose(fp);
 
@@ -732,7 +736,6 @@ int main(int argc, char **argv)
     //     {0, 1, 1, 1, 1, 1, 1, 1, 1, 0},
     //     {0, 0, 0, 1, 0, 0, 0, 0, 0, 0}};
     
-    a_star_search(grid, src, dst);
    
    // printf("After: \n");
    // print_grid(grid, src, dst);
