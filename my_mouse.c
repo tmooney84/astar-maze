@@ -4,7 +4,7 @@
 #include <string.h>
 #include <math.h>
 
-#define ROW 9
+#define ROW 10
 #define COL 10
 
 #define MAX_LENGTH 1000
@@ -82,15 +82,21 @@ pStack *new_pStack(void)
     return s;
 }
 
+// is empty stack
+bool is_empty_pStack(pStack *s)
+{
+    return s->highest_used == -1 ? true : false;
+}
+
 // push to stack
 void push_pStack(pStack *s, Pair *p)
 {
-    pNode *n = malloc(sizeof(pNode));
-    if (!n)
-    {
-        malloc_error();
+    if (s->highest_used >= MAX_LENGTH * MAX_LENGTH - 1) {
+        fprintf(stderr, "Error: Stack overflow\n");
+        return;
     }
-    n->pair = p;
+    
+    pNode *n = new_pNode(p);
     s->highest_used++;
     s->step[s->highest_used] = n;
     return;
@@ -99,17 +105,15 @@ void push_pStack(pStack *s, Pair *p)
 // pop from stack
 Pair *pop_pStack(pStack *s)
 {
+    if(is_empty_pStack(s)){
+        fprintf(stderr, "Error: Attempt to pop from empty stack\n");
+        return NULL;
+    }
     pNode *top = s->step[s->highest_used];
-    s->highest_used++;
     Pair *top_coor = top->pair;
+    s->highest_used--;
     free(top);
     return top_coor;
-}
-
-// is empty stack
-bool is_empty_pStack(pStack *s)
-{
-    return s->highest_used == -1;
 }
 
 /*****************pPair Set Logic *****************/
@@ -140,62 +144,30 @@ void insert_pPair_at(pPair_set *set, pPair *p, int start_idx, int end_idx)
                "insert element due to exceeding array size.\n");
 }
 
-// insert pPair in order
-void insert_pPair_set(pPair_set *set, pPair *p)
-{
-    //  if empty just add to first cell
-    if (set->num_elements == 0)
-    {
-        set->start_idx = 0;
-        set->list[set->start_idx] = p;
-        set->num_elements++;
+
+void insert_pPair_set(pPair_set *set, pPair *p) {
+    if (set->num_elements >= MAX_LENGTH) {
+        printf("Open list overflow!\n");
         return;
     }
 
-    int end = (set->start_idx + set->num_elements - 1) % (sizeof(set->list) / sizeof(set->list[0]));
+    int i = set->num_elements - 1;
 
-    // non-wrapping
-    if (set->start_idx < end)
+    // Shift all elements with higher f (or same f but higher y/x) up one position
+    while (i >= 0 && (
+           set->list[i]->f > p->f ||
+          (set->list[i]->f == p->f && set->list[i]->pair.y > p->pair.y) ||
+          (set->list[i]->f == p->f && set->list[i]->pair.y == p->pair.y &&
+           set->list[i]->pair.x > p->pair.x)
+        )) 
     {
-        for (int i = set->start_idx; i <= end; i++)
-        {
-            if (set->list[i]->f == p->f)
-            {
-                // fast forward through same f value, y and x (if applicable)
-                while (set->list[i]->f == p->f && set->list[i]->pair.y > p->pair.y)
-                {
-                    i++;
-                    while (set->list[i]->f == p->f && set->list[i]->pair.y == p->pair.y && set->list[i]->pair.x > p->pair.x)
-                    {
-                        i++;
-                    }
-                }
-                insert_pPair_at(set, p, i, end);
-                return;
-            }
-            // if f value greater than the one in p
-            else if (set->list[i]->f > p->f)
-            {
-                insert_pPair_at(set, p, i, end);
-                return;
-            }
-            // last on the list
-            else
-            {
-                insert_pPair_at(set, p, i, end);
-                return;
-            }
-        }
+        set->list[i + 1] = set->list[i];
+        i--;
     }
 
-    // EDGE CASE if > 1M - 1 elements: wrapping
-    //  else if(set->start_idx > end){
-    //      for(int i = set->start_idx;; i++){
-    //      while(i <= sizeof(set->list - 1)){}
-    //      for(i = 0; i < end; i++){}
-    //      }
-    //  }
-
+    // Insert new element in its sorted position
+    set->list[i + 1] = p;
+    set->num_elements++;
     return;
 }
 
@@ -209,8 +181,6 @@ void update_pPair_set(pPair_set *set, int old_f, pPair *p)
     {
         if (set->list[i]->f == p->f)
         {
-            // start_update_idx: find where the new pPair should be placed
-                // fast forward through same f value, y and x (if applicable)
                 while (set->list[i]->f == p->f && set->list[i]->pair.y > p->pair.y)
                 {
                     i++;
@@ -232,22 +202,12 @@ void update_pPair_set(pPair_set *set, int old_f, pPair *p)
                 exit(1);
             }
 
-            //!!! OFF BY ONE ???? SHOULD IT BE THIS!!!???
-            // end_update_idx - 1 vs. end_update_idx;
             insert_pPair_at(set, p, start_update_idx, end_update_idx - 1);
             return;
         }
         fprintf(stderr, "update_pPair_set error");
         exit(1);
     }
-
-    // EDGE CASE if > 1M - 1 elements: wrapping
-    //  else if(set->start_idx > end){
-    //      for(int i = set->start_idx;; i++){
-    //      while(i <= sizeof(set->list - 1)){}
-    //      for(i = 0; i < end; i++){}
-    //      }
-    //  }
 }
 
 bool is_empty_pPair_set(pPair_set *set)
@@ -274,7 +234,7 @@ Pair *make_pair(int row, int col)
 // constructor for pPair *
 pPair *make_p_pair(int f, int row, int col)
 {
-    pPair *pp = malloc(sizeof(Pair));
+    pPair *pp = malloc(sizeof(pPair));
     if (!pp)
     {
         printf("malloc error\n");
@@ -383,7 +343,7 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
     }
 
     bool closed_list[ROW][COL];
-    memset(closed_list, false, sizeof(closed_list));
+    memset(closed_list, 0, sizeof(closed_list));
 
     Cell cell_details[ROW][COL];
 
@@ -435,10 +395,14 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
     // pPair_set empty if begin == end and highest_used == -1
     // while(!open_list.empty()){
 
-    while (!is_empty_pPair_set(open_list))
+    //while (!is_empty_pPair_set(open_list))
+    while (open_list->num_elements > 0)
     {
         // pPair pp = *openList.begin();
-        pPair *pp = open_list->list[open_list->start_idx];
+       /************************************************************* */ 
+        //pPair *pp = open_list->list[open_list->start_idx];
+       /************************************************************* */ 
+        pPair *pp = open_list->list[0];
 
         // with list could have two indexes one for beginning and one for end of list
         // by default start and end are -1, once the first value is in, they are set to 0
@@ -448,7 +412,12 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
         // then error max capacity reached
 
         // openList.erase(openList.begin());
-        open_list->start_idx++;
+        for (int k = 0; k < open_list->num_elements - 1; k++)
+    open_list->list[k] = open_list->list[k + 1];
+       /************************************************************* */ 
+       // open_list->start_idx++;
+       /************************************************************* */ 
+        open_list->num_elements--;
 
         if (open_list->start_idx >= MAX_LENGTH * MAX_LENGTH)
         {
@@ -501,7 +470,8 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
                 //***“Ignore closed” optimization (common for uniform grids)
                 if (cell_details[i - 1][j].f == __INT_MAX__)
                 {
-                    insert_pPair_set(open_list, make_p_pair(f_new, i - 1, j));
+                    pPair *pp = make_p_pair(f_new, i - 1, j);
+                    insert_pPair_set(open_list, pp);
 
                     cell_details[i - 1][j].f = f_new;
                     cell_details[i - 1][j].g = g_new;
@@ -511,7 +481,8 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
                 }
                 else if (cell_details[i - 1][j].f > f_new)
                 {
-                    update_pPair_set(open_list, cell_details[i - 1][j].f, make_p_pair(f_new, i - 1, j));
+                    pPair *pp = make_p_pair(f_new, i - 1, j);
+                    update_pPair_set(open_list, cell_details[i - 1][j].f, pp);
 
                     cell_details[i - 1][j].f = f_new;
                     cell_details[i - 1][j].g = g_new;
@@ -551,7 +522,8 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
 
                 if (cell_details[i + 1][j].f == __INT_MAX__)
                 {
-                    insert_pPair_set(open_list, make_p_pair(f_new, i + 1, j));
+                    pPair *pp = make_p_pair(f_new, i + 1, j);
+                    insert_pPair_set(open_list, pp);
 
                     cell_details[i + 1][j].f = f_new;
                     cell_details[i + 1][j].g = g_new;
@@ -561,7 +533,8 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
                 }
                 else if (cell_details[i + 1][j].f > f_new)
                 {
-                    update_pPair_set(open_list, cell_details[i + 1][j].f, make_p_pair(f_new, i + 1, j));
+                    pPair *pp = make_p_pair(f_new, i + 1, j);
+                    update_pPair_set(open_list, cell_details[i + 1][j].f, pp);
 
                     cell_details[i + 1][j].f = f_new;
                     cell_details[i + 1][j].g = g_new;
@@ -601,7 +574,8 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
 
                 if (cell_details[i][j + 1].f == __INT_MAX__)
                 {
-                    insert_pPair_set(open_list, make_p_pair(f_new, i, j + 1));
+                    pPair *pp = make_p_pair(f_new, i, j + 1);
+                    insert_pPair_set(open_list, pp);
 
                     cell_details[i][j + 1].f = f_new;
                     cell_details[i][j + 1].g = g_new;
@@ -611,7 +585,8 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
                 }
                 else if (cell_details[i][j + 1].f > f_new)
                 {
-                    update_pPair_set(open_list, cell_details[i][j + 1].f, make_p_pair(f_new, i, j + 1));
+                    pPair *pp = make_p_pair(f_new, i, j + 1);
+                    update_pPair_set(open_list, cell_details[i][j + 1].f, pp);
 
                     cell_details[i][j + 1].f = f_new;
                     cell_details[i][j + 1].g = g_new;
@@ -642,7 +617,7 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
             // else do this
             else if (closed_list[i][j - 1] == false && is_unblocked(grid, i, j - 1) == true)
             {
-                g_new = cell_details[i][j].g - 1;
+                g_new = cell_details[i][j].g + 1;
                 h_new = calc_hvalue(i, j - 1, *dst);
                 f_new = g_new + h_new;
 
@@ -650,7 +625,8 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
                 //-or- if on open list, check if this better with f
                 if (cell_details[i][j - 1].f == __INT_MAX__)
                 {
-                    insert_pPair_set(open_list, make_p_pair(f_new, i, j - 1));
+                    pPair *pp = make_p_pair(f_new, i, j - 1);
+                    insert_pPair_set(open_list, pp);
 
                     cell_details[i][j - 1].f = f_new;
                     cell_details[i][j - 1].g = g_new;
@@ -660,7 +636,8 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
                 }
                 else if (cell_details[i][j - 1].f > f_new)
                 {
-                    update_pPair_set(open_list, cell_details[i][j - 1].f, make_p_pair(f_new, i, j - 1));
+                    pPair *pp = make_p_pair(f_new, i, j - 1);
+                    update_pPair_set(open_list, cell_details[i][j - 1].f, pp);
 
                     cell_details[i][j - 1].f = f_new;
                     cell_details[i][j - 1].g = g_new;
@@ -690,22 +667,24 @@ void a_star_search(int grid[][COL], Pair *src, Pair *dst)
 
 int main(void)
 {
-    /*Initial Grid*/
-    // ROW = 9;
-    // COL = 10;
-
-    int grid[ROW][COL] = {{1, 0, 1, 1, 1, 1, 0, 1, 1, 1},
-                          {1, 1, 1, 0, 1, 1, 1, 0, 1, 1},
-                          {1, 1, 1, 0, 1, 1, 0, 1, 0, 1},
-                          {0, 0, 1, 0, 1, 0, 0, 0, 0, 1},
-                          {1, 1, 1, 0, 1, 1, 1, 0, 1, 0},
-                          {1, 0, 1, 1, 1, 1, 0, 1, 0, 0},
-                          {1, 0, 0, 0, 0, 1, 0, 0, 0, 1},
-                          {1, 0, 1, 1, 1, 1, 0, 1, 1, 1},
-                          {1, 1, 1, 0, 0, 0, 1, 0, 0, 1}};
-
-    Pair *src = make_pair(8, 0);
-    Pair *dst = make_pair(0, 0);
+    
+int grid[10][10] = {
+    {0, 0, 0, 1, 0, 0, 0, 0, 0, 0},
+    {0, 1, 1, 1, 1, 1, 1, 1, 0, 0},
+    {0, 1, 0, 1, 1, 0, 0, 1, 1, 0},
+    {0, 1, 1, 1, 1, 1, 1, 1, 1, 0},
+    {0, 0, 1, 0, 0, 1, 0, 0, 1, 0},
+    {0, 1, 1, 1, 1, 1, 1, 1, 0, 0},
+    {0, 1, 1, 1, 1, 1, 1, 0, 0, 0},
+    {0, 0, 1, 1, 1, 1, 1, 1, 1, 0},
+    {0, 1, 1, 1, 1, 1, 1, 1, 1, 0},
+    {0, 0, 0, 1, 0, 0, 0, 0, 0, 0}
+};
+Pair *src = make_pair(0, 3);
+Pair *dst = make_pair(9, 3);
+ 
+    //Pair *src = make_pair(8, 0);
+    //Pair *dst = make_pair(0, 0);
 
     a_star_search(grid, src, dst);
 
@@ -713,6 +692,29 @@ int main(void)
     src = NULL;
     free(dst);
     dst = NULL;
+
+    return 0;
+} 
+
+/***************************************************************** */
+/*Initial Grid*/
+    // ROW = 9;
+    // COL = 10;
+
+
+    // vvv 13 Steps
+    // int grid[ROW][COL] = {{1, 0, 1, 1, 1, 1, 0, 1, 1, 1},
+    //                       {1, 1, 1, 0, 1, 1, 1, 0, 1, 1},
+    //                       {1, 1, 1, 0, 1, 1, 0, 1, 0, 1},
+    //                       {0, 0, 1, 0, 1, 0, 0, 0, 0, 1},
+    //                       {1, 1, 1, 0, 1, 1, 1, 0, 1, 0},
+    //                       {1, 0, 1, 1, 1, 1, 0, 1, 0, 0},
+    //                       {1, 0, 0, 0, 0, 1, 0, 0, 0, 1},
+    //                       {1, 0, 1, 1, 1, 1, 0, 1, 1, 1},
+    //                       {1, 1, 1, 0, 0, 0, 1, 0, 0, 1}};
+
+/**************************************************************** */
+
 
     /*
     $>cat -e 01.map
@@ -727,6 +729,7 @@ int main(void)
     **       *$
     *        *$
     ***2******$
+   
     $>./my_mouse 01.map
     10x10* o12
     ***1******
@@ -747,4 +750,3 @@ int main(void)
     // start + end points and barriers
 
     // once built
-}
