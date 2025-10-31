@@ -8,7 +8,7 @@
 //#define COL 10
 
 #define MAX_LENGTH 1000
-#define HEAD_MAX 100
+#define HEAD_MAX 1000
 
 static int ROW; 
 static int COL; 
