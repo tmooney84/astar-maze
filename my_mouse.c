@@ -4,14 +4,14 @@
 #include <string.h>
 #include <math.h>
 
-//#define ROW 10
-//#define COL 10
+// #define ROW 10
+// #define COL 10
 
 #define MAX_LENGTH 1000
 #define HEAD_MAX 1000
 
-static int ROW; 
-static int COL; 
+static int ROW;
+static int COL;
 
 void malloc_error()
 {
@@ -304,34 +304,37 @@ void trace_path(Cell cell_details[][COL], int **grid, Pair dst)
     while (!is_empty_pStack(steps))
     {
         Pair *top_pair = pop_pStack(steps);
-     //   printf("-> (%d,%d) ", top_pair->y, top_pair->x);
+        //   printf("-> (%d,%d) ", top_pair->y, top_pair->x);
         // 7 is a placeholder
-        if(counter == num_steps)
+        if (counter == num_steps)
             grid[top_pair->y][top_pair->x] = 9;
-        else if(counter == 1)
+        else if (counter == 1)
             grid[top_pair->y][top_pair->x] = 2;
         else
             grid[top_pair->y][top_pair->x] = 7;
-        
+
         counter--;
         free(top_pair);
     }
 
-   //format to original map 
-    for(int i = 0; i < ROW; i++){
-        for(int j = 0; j < COL; j++){
-            if(grid[i][j] == 9)
+    // format to original map
+    for (int i = 0; i < ROW; i++)
+    {
+        for (int j = 0; j < COL; j++)
+        {
+            if (grid[i][j] == 9)
                 printf("1");
-            else if(grid[i][j] == 2)
-               printf("2"); 
-            else if(grid[i][j] == 0)
+            else if (grid[i][j] == 2)
+                printf("2");
+            else if (grid[i][j] == 0)
                 printf("*");
-            else if(grid[i][j] == 7)
+            else if (grid[i][j] == 7)
                 printf("o");
             else
                 printf(" ");
         }
-        if(i < ROW - 1){
+        if (i < ROW - 1)
+        {
             printf("\n");
         }
     }
@@ -442,7 +445,7 @@ void a_star_search(int **grid, Pair *src, Pair *dst)
             {
                 cell_details[i - 1][j].parent_i = i;
                 cell_details[i - 1][j].parent_j = j;
-                //printf("The destination cell is found\n");
+                // printf("The destination cell is found\n");
                 trace_path(cell_details, grid, *dst);
                 found_dst = true;
                 // free pPair after necessary data extracted and open_list
@@ -490,7 +493,7 @@ void a_star_search(int **grid, Pair *src, Pair *dst)
             {
                 cell_details[i + 1][j].parent_i = i;
                 cell_details[i + 1][j].parent_j = j;
-                //printf("The destination cell is found\n");
+                // printf("The destination cell is found\n");
                 trace_path(cell_details, grid, *dst);
                 found_dst = true;
                 free(pp);
@@ -536,7 +539,7 @@ void a_star_search(int **grid, Pair *src, Pair *dst)
             {
                 cell_details[i][j + 1].parent_i = i;
                 cell_details[i][j + 1].parent_j = j;
-                //printf("The destination cell is found\n");
+                // printf("The destination cell is found\n");
                 trace_path(cell_details, grid, *dst);
                 found_dst = true;
                 // free pPair after necessary data extracted and open_list
@@ -585,7 +588,7 @@ void a_star_search(int **grid, Pair *src, Pair *dst)
             {
                 cell_details[i][j - 1].parent_i = i;
                 cell_details[i][j - 1].parent_j = j;
-                //printf("The destination cell is found\n");
+                // printf("The destination cell is found\n");
                 trace_path(cell_details, grid, *dst);
                 found_dst = true;
                 free(pp);
@@ -635,55 +638,81 @@ void a_star_search(int **grid, Pair *src, Pair *dst)
     free(open_list);
 }
 
-// for inputs of ROW and COL from input instead of const
-// static int ROW = 0;
-// static int COL = 0;
-
-   void print_grid(int **grid, Pair *src, Pair *dst){
-      // ✅ Print verification
+void print_grid(int **grid, Pair *src, Pair *dst)
+{
+    // ✅ Print verification
     printf("Grid (%dx%d):\n", ROW, COL);
-    for (int i = 0; i < ROW; i++) {
-        for (int j = 0; j < COL; j++) {
+    for (int i = 0; i < ROW; i++)
+    {
+        for (int j = 0; j < COL; j++)
+        {
             printf("%d ", grid[i][j]);
         }
         printf("\n");
     }
 
-    if (src && dst) {
+    if (src && dst)
+    {
         printf("\nSource: (%d, %d)\n", src->x, src->y);
         printf("Destination: (%d, %d)\n", dst->x, dst->y);
-    } else {
+    }
+    else
+    {
         printf("\nError: Missing source or destination.\n");
     }
-   }
-
+}
 
 int main(int argc, char **argv)
 {
-    if(argc != 2){
+    if (argc != 2)
+    {
         perror("MAP ERROR");
         return 1;
     }
 
     FILE *fp = fopen(argv[1], "r");
-    if(!fp){
+    if (!fp)
+    {
         perror("MAP ERROR");
         return 1;
     }
 
     char header[HEAD_MAX];
 
-    if(!fgets(header, sizeof(header),fp)){
+    if (!fgets(header, sizeof(header), fp))
+    {
         fprintf(stderr, "MAP ERROR\n");
         fclose(fp);
         return 1;
     }
 
-    sscanf(header, "%dx%d", &ROW, &COL);
+    if (sscanf(header, "%dx%d", &ROW, &COL) != 2 || ROW <= 0 || COL <= 0)
+    {
+        fprintf(stderr, "MAP ERROR\n");
+        fclose(fp);
+        return 1;
+    }
 
     int **grid = malloc(ROW * sizeof(int *));
-    for(int i = 0; i < ROW; i++){
+    if (!grid)
+    {
+        fprintf(stderr, "Memory allocation failed\n");
+        fclose(fp);
+        return 1;
+    }
+
+    for (int i = 0; i < ROW; i++)
+    {
         grid[i] = malloc(COL * sizeof(int));
+        if (!grid[i])
+        {
+            fprintf(stderr, "Memory allocation failed at row %d\n", i);
+            for (int j = 0; j < i; j++)
+                free(grid[j]);
+            free(grid);
+            fclose(fp);
+            return 1;
+        }
     }
 
     char line[HEAD_MAX];
@@ -691,23 +720,32 @@ int main(int argc, char **argv)
     Pair *src = NULL;
     Pair *dst = NULL;
 
-    while(fgets(line, sizeof(line), fp) && row < ROW){
-        for(int col = 0; col < COL; col++){
+    while (fgets(line, sizeof(line), fp) && row < ROW)
+    {
+        for (int col = 0; col < COL; col++)
+        {
             char c = line[col];
 
-            if(c == '*'){
+            if (c == '*')
+            {
                 grid[row][col] = 0;
-            } else if(c == ' '){
+            }
+            else if (c == ' ')
+            {
                 grid[row][col] = 1;
-            } else if(c == '1'){
+            }
+            else if (c == '1')
+            {
                 grid[row][col] = 1;
                 src = make_pair(row, col);
-            } else if (c == '2'){
+            }
+            else if (c == '2')
+            {
                 grid[row][col] = 1;
                 dst = make_pair(row, col);
-            } 
-            else{
-            
+            }
+            else
+            {
             }
         }
         row++;
@@ -715,35 +753,16 @@ int main(int argc, char **argv)
 
     fclose(fp);
 
-
-  //  printf("Before: \n");
-  //  print_grid(grid, src, dst);
-
-    // int grid[10][10] = {
-    //     {0, 0, 0, 1, 0, 0, 0, 0, 0, 0},
-    //     {0, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-    //     {0, 1, 0, 1, 1, 0, 0, 1, 1, 0},
-    //     {0, 1, 1, 1, 1, 1, 1, 1, 1, 0},
-    //     {0, 0, 1, 0, 0, 1, 0, 0, 1, 0},
-    //     {0, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-    //     {0, 1, 1, 1, 1, 1, 1, 0, 0, 0},
-    //     {0, 0, 1, 1, 1, 1, 1, 1, 1, 0},
-    //     {0, 1, 1, 1, 1, 1, 1, 1, 1, 0},
-    //     {0, 0, 0, 1, 0, 0, 0, 0, 0, 0}};
-    
     a_star_search(grid, src, dst);
-   
-   // printf("After: \n");
-   // print_grid(grid, src, dst);
 
-    //free allocations
-    for (int i = 0; i < ROW; i++) free(grid[i]);
+    for (int i = 0; i < ROW; i++)
+        free(grid[i]);
     free(grid);
     grid = NULL;
     free(src);
     src = NULL;
     free(dst);
     dst = NULL;
-    
+
     return 0;
 }
