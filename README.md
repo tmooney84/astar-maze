@@ -2,19 +2,34 @@
 ***
 
 ## Task
-TODO - What is the problem? And where is the challenge?
+The program is designed to find the shortest path in a given maze.
 
 ## Description
-TODO - How have you solved the problem?
+The program leverages the A-Star algorithm with the help of stacks and set that relies on an array as the underlying data structure.
 
 ## Installation
-TODO - How to install your project? npm install? make? make re?
+1) Clone the repository
+
+with ssh:
+```
+git clone git@git.us.qwasar.io:my_mouse_193754_qzgk-b/my_mouse.git
+```
+
+2) Compile the program
+
+```
+make my_mouse
+```
+
+
 
 ## Usage
-TODO - How does it work?
+Run the program with a map file as the second argument
 ```
-./my_project argument1 argument2
+./my_mouse <map_file>
 ```
+
+Enjoy!!!
 
 ### The Core Team
 
