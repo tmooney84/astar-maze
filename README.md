@@ -8,7 +8,7 @@ The program is designed to find the shortest path in a given maze.
 The program leverages the A-Star algorithm with the help of stacks and set that relies on an array as the underlying data structure.
 
 ## Installation
-1) Clone the repository
+1) Clone the my_mouse repository
 
 with ssh:
 ```
@@ -20,8 +20,6 @@ git clone git@git.us.qwasar.io:my_mouse_193754_qzgk-b/my_mouse.git
 ```
 make my_mouse
 ```
-
-
 
 ## Usage
 Run the program with a map file as the second argument
